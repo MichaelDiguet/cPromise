@@ -2,6 +2,13 @@ import * as assert from 'assert';
 import {StickyContext} from '../src/stickyContext';
 import {CPromise} from '../src/index';
 
+// asyncFunction : resolve promise with value 'Hello World!' after 1ms
+function asyncFunction():Promise<string> {
+  return new CPromise((resolve)=>{
+      setTimeout(()=>resolve("Hello World!"), 1);
+  });
+}
+
 describe('test cPromise : ', function() {
 
   it('should create a cPromise', function() {
@@ -12,14 +19,6 @@ describe('test cPromise : ', function() {
   });
 
   it('should create a chain of CPromise', function() {
-
-    // asyncFunction : resolve promise with value 'Hello World!' after 1s
-    function asyncFunction():Promise<string> {
-      return new CPromise((resolve)=>{
-          setTimeout(()=>resolve("Hello World!"), 1000);
-      });
-    }
-    // chain of CPromises
     return CPromise.resolve('start')
     .then(function(res) {
       assert.equal('start', res);
@@ -29,37 +28,26 @@ describe('test cPromise : ', function() {
     })
   });
 
-  it('should create a chain of CPromise and keep a context through it', function(done) {
-    //async function : resolve promise with value 'Hello World!' after 1s
-    function asyncFunction():Promise<string> {
-      return new CPromise((resolve)=>{
-          setTimeout(()=>resolve("Hello World!"), 1000);
-      });
-    }
-
+  it.only('should create a chain of CPromise and keep a context through it', function(done) {
     // create and init a context
     let myContext = StickyContext.getInstance();
     myContext.initContext({
       'key1' : 'value1',
       'key2' : 'value2'
     });
-
     // chain of CPromises
-    let promise = new CPromise(function(resolve, reject) {
-      resolve('start');
-    });
-    assert.deepEqual(myContext.getContext(), promise.getContext());
-    promise.then((res) => {
+    CPromise.resolve('start')
+    .then(function(res) {
       assert.equal('start', res);
+      assert.equal(StickyContext.getInstance().getContext()['key1'], 'value1');
       return asyncFunction();
-    })
-    assert.deepEqual(myContext.getContext(), promise.getContext());
-    promise.then((res) => {
+    }).then((res) => {
       assert.equal('Hello World!', res);
-    })
+      assert.equal(StickyContext.getInstance().getContext()['key2'], 'value2');
+      done();
+    });
     // destroy context
     myContext.destroyContext();
-    done();
   });
 
 });

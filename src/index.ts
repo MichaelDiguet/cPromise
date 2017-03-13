@@ -1,22 +1,25 @@
-import {StickyContext} from './stickyContext';
+import { StickyContext } from './stickyContext';
 
-export class CPromise extends Promise<any> {
+export class CPromise<T> extends Promise<any> {
 
-  public getContext: () => Object;
+  public then(onfulfilled?: ((value: T) => T | PromiseLike<T>) | undefined | null, onrejected?: ((reason: any) => T | PromiseLike<T>) | undefined | null): Promise<T> {
+    let ctxSav = StickyContext.getInstance().getContext();
+    return super.then(
+      (value: T) => {
+        StickyContext.getInstance().initContext(ctxSav);
+        let res = onfulfilled(value);
+        StickyContext.getInstance().destroyContext();
+        return res;
+      },
+      (reason: any) => {
+        StickyContext.getInstance().initContext(ctxSav);
+        let res = onrejected(reason);
+        StickyContext.getInstance().destroyContext();
+        return res;
+      },
+    );
+  };
 
-  constructor(executor: (resolve, reject) => void) {
-    super((resolve, reject) => {
-      function contextExecutor () {
-        let internContext = StickyContext.getInstance().getContext();
-        executor(resolve, reject);
-        return internContext;
-      }
-      return contextExecutor();
-    })
-    this.getContext = () => {
-      return StickyContext.getInstance().getContext();
-    }
-  }
 }
 
 export default CPromise;
