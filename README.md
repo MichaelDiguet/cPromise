@@ -47,7 +47,7 @@ Promise.resolve().then(function() {
 globalCtx = 'Second treatment: ';
 Promise.resolve().then(function() {
   return f(3, 4);
-}).then(function(r1) {
+}).then(function(r2) {
   debug(f(r2, 5));
 });
 
